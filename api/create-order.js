@@ -1,5 +1,7 @@
 export default async function handler(req, res) {
 
+  console.log("KEY ID:", process.env.RAZORPAY_KEY_ID ? "LOADED" : "MISSING");
+  console.log("KEY SECRET:", process.env.RAZORPAY_KEY_SECRET ? "LOADED" : "MISSING");
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
