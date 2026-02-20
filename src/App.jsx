@@ -547,7 +547,7 @@ function SubmitPage({ setPage }) {
     // =============================
     if (payment === "razorpay") {
 
-      const res = await fetch("https://regret-registry.vercel.app/api/create-order", {
+      const res = await fetch("/api/create-order", {
         method: "POST"
       });
 
@@ -555,7 +555,6 @@ function SubmitPage({ setPage }) {
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: order.amount,
         currency: order.currency,
         name: "Regret Registry",
         description: "Archive your regret",
@@ -574,7 +573,7 @@ function SubmitPage({ setPage }) {
               ...response,
               regretData: {
                 text: form.text,
-                name: form.name,
+                display_name: form.name,
                 category: form.category
               }
             })
@@ -631,6 +630,24 @@ function SubmitPage({ setPage }) {
           Thank you for your contribution to collective poor judgment.
         </p>
       </div>
+
+    {/* SHARE BUTTONS */}
+    <div style={{
+      marginBottom: "2rem",
+      textAlign: "center"
+    }}>
+
+     <p style={{
+       fontSize: ".8rem",
+       color: "var(--gray)",
+       marginBottom: ".8rem"
+     }}>
+       Share your regret with the world ↓
+     </p>
+
+      <ShareButtons regretText={form.text} />
+
+    </div>
 
       <div style={{display:"flex",gap:"1rem",flexWrap:"wrap"}}>
         <button
@@ -1296,11 +1313,67 @@ async function login() {
     </div>
   );
 }
+
+function ShareButtons({ regretText }) {
+
+  const url = "https://regret-registry.vercel.app";
+
+  const text = `I paid ₹87 to permanently archive this regret 💀
+
+"${regretText}"
+
+Archive yours → ${url}`;
+
+  const open = (link) => window.open(link, "_blank");
+
+  return (
+    <div style={{
+      display: "flex",
+      gap: "10px",
+      justifyContent: "center",
+      flexWrap: "wrap"
+    }}>
+
+      <button onClick={() =>
+        open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`)
+      }>
+        X
+      </button>
+
+      <button onClick={() =>
+        open(`https://www.threads.net/intent/post?text=${encodeURIComponent(text)}`)
+      }>
+        Threads
+      </button>
+
+      <button onClick={() =>
+        open(`https://www.reddit.com/submit?title=${encodeURIComponent(text)}`)
+      }>
+        Reddit
+      </button>
+
+      <button onClick={() =>
+        open(`https://wa.me/?text=${encodeURIComponent(text)}`)
+      }>
+        WhatsApp
+      </button>
+
+      <button onClick={() => {
+        navigator.clipboard.writeText(text);
+        alert("Copied! Paste on Instagram");
+      }}>
+        Instagram
+      </button>
+
+    </div>
+  );
+}
+
 const LEGAL = {
   terms:{title:"Terms & Conditions",sub:"The legal bit. We know you won't read it. That's kind of on brand.",sections:[{h:"1. The Service",b:"Regret Registry is a platform for anonymous public confession of personal regrets. By submitting, you confirm the regret is yours, not fabricated, and not containing personal information about others."},{h:"2. Payment",b:"All submissions require a $1 payment via PayPal or Razorpay. Additional features (edits, deletions, pins, badges, locks, bumps) are priced separately. All fees are non-refundable once applied."},{h:"3. Content",b:"Submissions must not include real names of others, personal contact information, defamatory statements, or illegal content. We reserve the right to remove submissions at any time."},{h:"4. Anonymity",b:"We do not publish your real name. The archive name is chosen by you. Your payment processor handles billing per their own terms."},{h:"5. Management Links",b:"Private management links are generated per submission. We do not store accounts. Losing your link means losing management access. We cannot recover lost links."},{h:"6. Liability",b:"We are a museum of poor decisions, not a therapist or legal advisor. Nothing on this platform constitutes advice of any kind."}]},
   privacy:{title:"Privacy Policy",sub:"We collect the minimum. We regret nothing.",sections:[{h:"What We Collect",b:"Submission text, category, archive name (optional), email (optional, for management link delivery), and payment confirmation. Full payment card details are not stored by us."},{h:"What We Don't Collect",b:"Your real name (unless you use it as your archive name). We do not track you across the internet."},{h:"Email Use",b:"If provided, your email is used exclusively to send your management link. We do not send marketing emails. Ever."},{h:"Third Parties",b:"PayPal and Razorpay process payments per their own privacy policies. Supabase stores submission data. Vercel/Netlify handles infrastructure."},{h:"Data Retention",b:"Published regrets are retained indefinitely. Deleted regrets (via Escape Fee) are removed from public view within 24 hours."}]},
-  refund:{title:"Refund Policy",sub:"Short version: no. Long version: still no.",sections:[{h:"Submission Fee",b:"The $1 submission fee is non-refundable once your regret is published. This mirrors the permanence of regret itself."},{h:"Feature Purchases",b:"All feature fees (edit, delete, pin, badge, lock, bump) are non-refundable once applied. If a feature was purchased but not applied due to a technical error on our end, contact us."},{h:"The Escape Fee",b:"Paying $5 to delete your regret removes it from public view. The $5 fee is non-refundable. This is your closure."},{h:"Contact",b:"billing@regretregistry.com with your transaction ID for any billing queries."}]},
-  contact:{title:"Contact",sub:"We're here. Reluctantly.",sections:[{h:"General",b:"hello@regretregistry.com"},{h:"Billing",b:"billing@regretregistry.com\nInclude your PayPal Transaction ID or Razorpay Order ID."},{h:"Content Removal",b:"removal@regretregistry.com\nInclude your archive name and approximate submission date."},{h:"Press",b:"press@regretregistry.com\nOpen to coverage. Closed to anything that compromises submitter anonymity."}]},
+  refund:{title:"Refund Policy",sub:"Short version: no. Long version: still no.",sections:[{h:"Submission Fee",b:"The $1 submission fee is non-refundable once your regret is published. This mirrors the permanence of regret itself."},{h:"Feature Purchases",b:"All feature fees (edit, delete, pin, badge, lock, bump) are non-refundable once applied. If a feature was purchased but not applied due to a technical error on our end, contact us."},{h:"The Escape Fee",b:"Paying $5 to delete your regret removes it from public view. The $5 fee is non-refundable. This is your closure."},{h:"Contact",b:"regretregistry@yahoo.com with your transaction ID for any billing queries."}]},
+  contact:{title:"Contact",sub:"We're here. Reluctantly.",sections:[{h:"General",b:"regretregistry@yahoo.com"},{h:"Billing",b:"Include your PayPal Transaction ID or Razorpay Order ID."},{h:"Content Removal",b:"include your archive name and approximate submission date."},{h:"Press",b:"Open to coverage. Closed to anything that compromises submitter anonymity."}]},
 };
 
 function LegalPage({ type }) {
