@@ -6,9 +6,14 @@ export default async function handler(req, res) {
 
   try {
 
-    // dynamic import (fixes ESM + CommonJS conflict on Vercel)
     const RazorpayModule = await import("razorpay");
     const Razorpay = RazorpayModule.default;
+
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({
+        error: "Missing Razorpay environment variables"
+      });
+    }
 
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
@@ -25,6 +30,9 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error("ORDER ERROR:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({
+      error: err.message,
+      stack: err.stack
+    });
   }
 }
