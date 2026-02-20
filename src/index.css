@@ -64,3 +64,33 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+/* ================================= */
+/* FORCE MOBILE NAV FIX */
+/* ================================= */
+
+@media screen and (max-width: 768px) {
+
+  nav.nav {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    height: auto !important;
+  }
+
+  nav.nav a,
+  nav.nav button {
+    width: 100% !important;
+    text-align: center !important;
+    margin: 0 !important;
+  }
+
+  nav.nav .btn,
+  nav.nav .btn-p {
+    position: static !important;
+    transform: none !important;
+  }
+
+}
