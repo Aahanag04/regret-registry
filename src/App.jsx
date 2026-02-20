@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { supabase } from './supabaseClient'
+import { useEffect, useState } from "react";
 
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap');`;
 
@@ -16,24 +17,6 @@ const MOCK_REGRETS = [
   { id: 11, text: "Told my entire LinkedIn network I was 'excited for new opportunities' before I'd actually quit. My CEO is a connection.", category: "Career", name: "Networking Innovator", votes: 987, timestamp: "4 days ago", tags: ["Dumbest"], pinned: false, badge: null },
   { id: 12, text: "Bought a boat. I live in a landlocked state. I thought it would motivate me to move. I still live in the landlocked state.", category: "Life Decisions", name: "Maritime Dreamer", votes: 2345, timestamp: "2 weeks ago", tags: ["Dumbest","Funniest"], pinned: false, badge: null },
 ];
-
-const LEADERBOARD = {
-  dumbest: [
-    { rank:1, text:"Invested emergency fund in emotionally complex frog NFTs.", name:"Amphibian Investor", score:"97/100 Dumb" },
-    { rank:2, text:"Bought a boat. Still live in a landlocked state. Have never boated.", name:"Maritime Dreamer", score:"94/100 Dumb" },
-    { rank:3, text:"Said 'I'm basically a people person' in job interview. Have not spoken to a coworker voluntarily since.", name:"Corporate Hermit", score:"91/100 Dumb" },
-  ],
-  dramatic: [
-    { rank:1, text:"Moved across country for someone met twice. Together 11 days.", name:"Romantic Optimist", score:"99/100 Drama" },
-    { rank:2, text:"Got ex's name tattooed. Broke up 3 days later. New partner also named Alex.", name:"Statistically Cursed", score:"96/100 Drama" },
-    { rank:3, text:"Replied all to 847 people about the lasagna situation.", name:"Lasagna Person", score:"88/100 Drama" },
-  ],
-  funniest: [
-    { rank:1, text:"Replied all to 847 coworkers about the lasagna situation. Still employed.", name:"Lasagna Person", score:"★★★★★" },
-    { rank:2, text:"Sent 'I love you' to landlord. He raised rent anyway.", name:"Regretful Legend", score:"★★★★★" },
-    { rank:3, text:"Winked at a waiter after saying 'you too'. Don't know why I winked.", name:"The Winker", score:"★★★★½" },
-  ],
-};
 
 const CATEGORIES = ["Relationships","Career","Money","Family","Embarrassment","Life Decisions","Secrets","Other"];
 const CAT_ICONS = { Relationships:"💔", Career:"💼", Money:"💸", Family:"👨‍👩‍👧", Embarrassment:"😬", "Life Decisions":"🎲", Secrets:"🤫", Other:"🌀" };
@@ -307,9 +290,6 @@ footer{background:var(--ink);padding:2.5rem 2rem;margin-top:auto}
 `;
 
 // Utility: generate a fake management token
-function genToken() {
-  return 'mgmt_' + Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,10);
-}
 
 function Nav({ page, setPage }) {
   return (
@@ -357,8 +337,20 @@ function Footer({ setPage }) {
 }
 
 function LandingPage({ setPage }) {
+  useEffect(() => {
+  document.title = "Regret Registry — Archive Your Poor Decisions";
+  const meta = document.createElement("meta");
+  meta.name = "description";
+  meta.content = "Archive your regrets permanently. One dollar. One confession.";
+  document.head.appendChild(meta);
+
+  return () => {
+    document.head.removeChild(meta);
+  }; 
+ }, []);
   return (
     <div className="page">
+
       <PaymentBanner />
       <div className="hero">
         <div className="stamp">Est. Today · Regretting Since Always</div>
@@ -377,7 +369,7 @@ function LandingPage({ setPage }) {
       <hr className="divider" />
 
       <div className="stats">
-        {[["4,891","Documented Disasters"],["$4,891","Paid to Confess"],["0","Lessons Learned"]].map(([n,l]) => (
+        {[["22","Documented Disasters"],["$22","Paid to Confess"],["0","Lessons Learned"]].map(([n,l]) => (
           <div className="stat" key={l}><div className="n">{n}</div><div className="l">{l}</div></div>
         ))}
       </div>
@@ -397,6 +389,7 @@ function LandingPage({ setPage }) {
         </div>
       </div>
 
+
       <div className="cta-section">
         <div className="cta-title">Ready to contribute to<br />humanity's permanent record?</div>
         <p className="cta-sub">One dollar. One confession. Your therapist charges more and listens less.</p>
@@ -409,7 +402,24 @@ function LandingPage({ setPage }) {
 function ArchivePage({ setPage }) {
   const [filter, setFilter] = useState("All");
   const [sort, setSort] = useState("popular");
-  const filtered = MOCK_REGRETS
+  const [dbRegrets, setDbRegrets] = useState([]);
+  useEffect(() => {
+  fetchRegrets()
+}, [])
+
+async function fetchRegrets() {
+  const { data, error } = await supabase
+    .from("regrets")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error(error)
+  } else {
+    setDbRegrets(data)
+  }
+}
+  const filtered = dbRegrets
     .filter(r => filter==="All" || r.category===filter)
     .sort((a,b) => {
       if (a.pinned && !b.pinned) return -1;
@@ -434,25 +444,61 @@ function ArchivePage({ setPage }) {
       </div>
       <div className="arch-grid">
         {filtered.map(r => (
-          <div className={`rcard ${r.pinned?"pinned":""}`} key={r.id}>
-            {r.pinned && <div className="pin-label">📌 Pinned</div>}
-            {r.badge && <div className="badge-tag">{r.badge}</div>}
-            <div className="rcard-top">
-              <div className="rcat">{r.category}</div>
-              <div style={{display:"flex",gap:".4rem",alignItems:"center"}}>
-                {r.locked && <span className="locked-tag">🔒 Locked</span>}
-                <div className="rvotes">▲ {r.votes.toLocaleString()}</div>
-              </div>
-            </div>
-            <div className="rtext">"{r.text}"</div>
-            <div className="rfoot">
-              <div className="rname">— {r.name} · {r.timestamp}</div>
-              <div className="rtags">
-                {r.tags.map(t => <span key={t} className={`tag ${t==="Funniest"?"f":t==="Dumbest"?"d":"m"}`}>{t}</span>)}
-              </div>
-            </div>
-          </div>
-        ))}
+  <div className="rcard" key={r.id}>
+
+    <div className="rcard-top">
+      <div className="rcat">{r.category || "General"}</div>
+      <div className="rvotes">▲ 0</div>
+    </div>
+
+    <div className="rtext">"{r.text}"</div>
+
+    <div className="rfoot">
+      <div className="rname">
+        — {r.display_name || "Anonymous"} · {new Date(r.created_at).toLocaleDateString()}
+      </div>
+    </div>
+
+  </div>
+))}
+      </div>
+    </div>
+  );
+}
+
+function PaypalSuccess({ setPage }) {
+
+  useEffect(() => {
+
+    const capture = async () => {
+
+      const params = new URLSearchParams(window.location.search);
+      const orderID = params.get("token");
+
+      const res = await fetch("/api/paypal-capture-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderID })
+      });
+
+      const data = await res.json();
+
+      if (data.status === "COMPLETED") {
+        alert("Payment successful!");
+        setPage("archive");
+      } else {
+        alert("Payment capture failed");
+      }
+    };
+
+    capture();
+
+  }, []);
+
+  return (
+    <div className="page">
+      <div className="success-pg">
+        Processing PayPal payment...
       </div>
     </div>
   );
@@ -463,24 +509,104 @@ function SubmitPage({ setPage }) {
   const [form, setForm] = useState({ text:"", category:"", name:"", email:"", confirmed:false });
   const [payment, setPayment] = useState("paypal");
   const [loading, setLoading] = useState(false);
-  const [mgmtToken] = useState(genToken);
-  const [copied, setCopied] = useState(false);
   const [done, setDone] = useState(false);
   const max = 300;
   const ok1 = form.text.trim().length > 0 && form.category && form.confirmed;
 
-  const mgmtLink = `https://regretregistry.com/manage/${mgmtToken}`;
+  
 
-  const pay = () => {
+       const pay = async () => {
+  try {
     setLoading(true);
-    setTimeout(() => { setLoading(false); setDone(true); }, 1400);
-  };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(mgmtLink).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
+    // =============================
+    // PAYPAL
+    // =============================
+    if (payment === "paypal") {
+
+      const res = await fetch("/api/paypal-create-order", {
+        method: "POST"
+      });
+
+      const data = await res.json();
+
+      if (!data.id) {
+        alert("PayPal order failed");
+        setLoading(false);
+        return;
+      }
+
+      window.location.href =
+        `https://www.paypal.com/checkoutnow?token=${data.id}`;
+
+      return;
+    }
+
+    // =============================
+    // RAZORPAY
+    // =============================
+    if (payment === "razorpay") {
+
+      const res = await fetch("/api/create-order", {
+        method: "POST"
+      });
+
+      const order = await res.json();
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Regret Registry",
+        description: "Archive your regret",
+        order_id: order.id,
+
+        prefill: {
+          email: form.email || ""
+        },
+
+        handler: async function (response) {
+
+          const verifyRes = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...response,
+              regretData: {
+                text: form.text,
+                name: form.name,
+                category: form.category
+              }
+            })
+          });
+
+          const verifyData = await verifyRes.json();
+
+          if (!verifyData.success) {
+            alert("Payment verification failed");
+            return;
+          }
+
+          setDone(true);
+        },
+
+        theme: {
+          color: "#c8392b"
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("Payment failed");
+  }
+
+  setLoading(false);
+};
+
 
   const reset = () => {
     setDone(false); setStep(1);
@@ -488,50 +614,43 @@ function SubmitPage({ setPage }) {
   };
 
   if (done) return (
-    <div className="page">
-      <div className="success-pg">
-        <div style={{textAlign:"center",marginBottom:"2.5rem"}}>
-          <div className="suc-stamp">OFFICIALLY ARCHIVED</div>
-          <h1 className="suc-title">Congratulations.<br />It's permanent now.</h1>
-          <p className="suc-sub">
-            Your regret is now part of documented human history. Future generations won't learn from it… but at least they'll read it.<br /><br />
-            Thank you for your contribution to collective poor judgment.
-          </p>
-        </div>
+  <div className="page">
+    <div className="success-pg">
 
-        {/* MANAGEMENT LINK BOX */}
-        <div className="manage-box">
-          <div className="manage-box-title">🔑 Manage Your Regret</div>
-          <div className="manage-box-sub">
-            This is your private management link. Only you have it. Lose it and you lose control of your regret — which, frankly, would not be the first time you've lost control of something important.
-          </div>
-          <div className="link-display">
-            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mgmtLink}</span>
-            <button className="link-copy" onClick={handleCopy}>{copied ? "Copied ✓" : "Copy"}</button>
-          </div>
-          <div className="link-warn">
-            ⚠️ Save this link. There is no account. No recovery. This is it.
-          </div>
-          {form.email && (
-            <div className="email-sent">
-              ✉️ Also sent to <strong style={{marginLeft:".3rem"}}>{form.email}</strong> — check your inbox and probably your spam folder too, because that's where your decisions end up.
-            </div>
-          )}
-        </div>
+      <div style={{textAlign:"center",marginBottom:"2.5rem"}}>
+        <div className="suc-stamp">OFFICIALLY ARCHIVED</div>
 
-        <div style={{background:"var(--paper)",border:"1px solid var(--border)",padding:"1.2rem 1.5rem",marginBottom:"2rem",fontSize:".7rem",color:"var(--gray)",lineHeight:1.7}}>
-          <strong style={{color:"var(--ink)",display:"block",marginBottom:".3rem"}}>What can you do from your management page?</strong>
-          Edit your regret · Delete it (for $5) · Pin it to the top · Buy a fame badge · Lock it permanently · Bump it back up
-        </div>
+        <h1 className="suc-title">
+          Congratulations.<br />It's permanent now.
+        </h1>
 
-        <div style={{display:"flex",gap:"1rem",flexWrap:"wrap"}}>
-          <button className="btn btn-green" style={{flex:1}} onClick={() => setPage("manage")}>Manage My Regret</button>
-          <button className="btn btn-s" onClick={() => setPage("archive")}>View the Archive</button>
-          <button className="btn btn-s" onClick={reset}>Confess Another</button>
-        </div>
+        <p className="suc-sub">
+          Your regret is now part of documented human history.
+          Future generations won't learn from it… but at least they'll read it.
+          <br /><br />
+          Thank you for your contribution to collective poor judgment.
+        </p>
       </div>
+
+      <div style={{display:"flex",gap:"1rem",flexWrap:"wrap"}}>
+        <button
+          className="btn btn-s"
+          onClick={() => setPage("archive")}
+        >
+          View the Archive
+        </button>
+
+        <button
+          className="btn btn-p"
+          onClick={reset}
+        >
+          Confess Another
+        </button>
+      </div>
+
     </div>
-  );
+  </div>
+);
 
   return (
     <div className="page">
@@ -579,7 +698,7 @@ function SubmitPage({ setPage }) {
 
           <div className="fg">
             <label className="fl">Email <span style={{color:"var(--gray)",fontWeight:400}}>(optional, but recommended)</span></label>
-            <span className="fsl">We'll send your private management link here. In case you lose it, which given your track record, is likely.</span>
+            <span className="fsl">Optional. For payment receipts and the rare event your poor decision goes viral.</span>
             <input className="fi" type="email" placeholder="your@email.com" value={form.email} onChange={e => setForm({...form,email:e.target.value})} />
           </div>
 
@@ -605,7 +724,6 @@ function SubmitPage({ setPage }) {
             <div className="rv-row"><div className="rv-lbl">The Regret</div><div className="rv-val">"{form.text}"</div></div>
             <div className="rv-row"><div className="rv-lbl">Category</div><div className="rv-val sm">{form.category}</div></div>
             <div className="rv-row"><div className="rv-lbl">Archive Name</div><div className="rv-val sm">{form.name||"Anonymous Coward"}</div></div>
-            {form.email && <div className="rv-row"><div className="rv-lbl">Management Link Sent To</div><div className="rv-val sm">{form.email}</div></div>}
           </div>
           <div className="price-box">
             <div style={{fontSize:".6rem",letterSpacing:".15em",textTransform:"uppercase",color:"var(--gray)",marginBottom:".5rem"}}>Cost of documenting your failure</div>
@@ -619,154 +737,239 @@ function SubmitPage({ setPage }) {
         </>}
 
         {/* STEP 3: PAYMENT */}
-        {step === 3 && <>
-          <div className="fg">
-            <label className="fl" style={{marginBottom:"1rem"}}>Select Payment Method</label>
-            <div className="pay-methods">
-              {[["paypal","🅿️","PayPal","Global · Cards & PayPal Balance"],["razorpay","₹","Razorpay","India · UPI, Cards, Netbanking"]].map(([id,logo,name,region]) => (
-                <div key={id} className={`popt ${payment===id?"sel":""}`} onClick={() => setPayment(id)}>
-                  <div className="plogo">{logo}</div>
-                  <div className="pname">{name}</div>
-                  <div className="pregion">{region}</div>
-                </div>
-              ))}
-            </div>
+{step === 3 && <>
+  <div className="fg">
+    <label className="fl" style={{marginBottom:"1rem"}}>
+      Select Payment Method
+    </label>
+
+    <div className="pay-methods">
+
+      {[
+        ["paypal","🅿️","PayPal","Coming Soon"],
+        ["razorpay","₹","Razorpay","India · UPI, Cards, Netbanking"]
+      ].map(([id,logo,name,region]) => {
+
+        const disabled = id === "paypal";
+
+        return (
+          <div
+            key={id}
+            className={`popt ${payment===id?"sel":""}`}
+            onClick={() => {
+              if (disabled) return;
+              setPayment(id);
+            }}
+            style={{
+              opacity: disabled ? 0.5 : 1,
+              cursor: disabled ? "not-allowed" : "pointer"
+            }}
+          >
+            <div className="plogo">{logo}</div>
+            <div className="pname">{name}</div>
+            <div className="pregion">{region}</div>
           </div>
-          <div className="price-box">
-            <div className="price-big">$1.00</div>
-            <div className="price-note">via {payment==="paypal"?"PayPal":"Razorpay"}</div>
-          </div>
-          <div className="secure">🔒 Your regret only goes live after payment clears. Failed payments save nothing. A rare scenario where failure protects you.</div>
-          <div className="fnav">
-            <button className="btn btn-s" onClick={() => setStep(2)}>← Back</button>
-            <button className="btn btn-p" onClick={pay} style={{opacity:loading?.6:1}}>
-              {loading ? "Processing…" : "Pay $1 & Archive My Regret 🔒"}
-            </button>
-          </div>
-        </>}
+        );
+      })}
+
+    </div>
+  </div>
+
+  <div className="price-box">
+    <div className="price-big">$1.00</div>
+    <div className="price-note">
+      via {payment==="paypal" ? "PayPal (coming soon)" : "Razorpay"}
+    </div>
+  </div>
+
+  <div className="secure">
+    🔒 Your regret only goes live after payment clears. Failed payments save nothing.
+  </div>
+
+  <div className="fnav">
+    <button className="btn btn-s" onClick={() => setStep(2)}>
+      ← Back
+    </button>
+
+    <button
+      className="btn btn-p"
+      onClick={() => {
+        if (payment === "paypal") {
+          alert("PayPal launching soon 🌍");
+          return;
+        }
+        pay();
+      }}
+      style={{opacity: loading ? 0.6 : 1}}
+    >
+      {loading ? "Processing…" : "Pay $1 & Archive My Regret 🔒"}
+    </button>
+
+  </div>
+</>}
       </div>
     </div>
   );
 }
 
-// MANAGEMENT PAGE — shown after clicking "Manage My Regret"
 function ManagePage({ setPage }) {
-  const [purchased, setPurchased] = useState([]);
-  const regret = MOCK_REGRETS[0]; // Demo: using first regret as example
-
-  const handleBuy = (id) => {
-    if (purchased.includes(id)) return;
-    const u = ALL_UPSELLS.find(x=>x.id===id);
-    if (id === "delete") {
-      if (window.confirm(`Pay $${u.price} to permanently remove your regret? This cannot be undone. (The irony is noted.)`)) {
-        setPurchased(p => [...p, id]);
-      }
-    } else {
-      setPurchased(p => [...p, id]);
-    }
-  };
-
-  const isDeleted = purchased.includes("delete");
-
   return (
     <div className="page">
       <div className="mgmt-wrap">
+
         <div className="mgmt-header">
           <div className="mgmt-title">Manage Your Regret</div>
-          <div className="mgmt-sub">Your private management page. Bookmark it. Screenshot it. Tattoo the URL somewhere sensible — unlike last time.</div>
+          <div className="mgmt-sub">
+            This is where you make additional questionable decisions about your existing questionable decision.
+          </div>
         </div>
 
-        {isDeleted ? (
-          <div style={{background:"rgba(42,122,75,.08)",border:"2px solid var(--green)",padding:"2rem",textAlign:"center",marginBottom:"2rem"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:900,marginBottom:".5rem"}}>Your regret has been removed.</div>
-            <div style={{fontSize:".75rem",color:"var(--gray)",lineHeight:1.7}}>From the archive, anyway. We cannot speak for your memory, your family, or the people who were there.</div>
+        <div className="mgmt-regret">
+          <div className="mgmt-regret-cat">Your Published Regret</div>
+          <div className="mgmt-regret-text">
+            Your regret is live in the archive. It is now part of recorded human history.
           </div>
-        ) : (
-          <div className="mgmt-regret">
-            <div className="mgmt-regret-cat">{regret.category}</div>
-            <div className="mgmt-regret-text">"{regret.text}"</div>
-            <div className="mgmt-regret-name">— {regret.name}</div>
-          </div>
-        )}
+          <div className="mgmt-regret-name">— You</div>
+        </div>
 
         <div className="mgmt-status-row">
-          <span className="status-badge live">● Live</span>
-          {purchased.includes("pin") && <span className="status-badge pinned">📌 Pinned</span>}
-          {purchased.includes("lock") && <span className="status-badge locked">🔒 Locked Forever</span>}
-          {purchased.includes("badge") && <span className="status-badge" style={{borderColor:"var(--gold)",color:"var(--gold)"}}>👑 Fame Badge</span>}
+          <div className="status-badge live">Live</div>
         </div>
-
-        {!isDeleted && <>
-          <div style={{fontSize:".65rem",letterSpacing:".15em",textTransform:"uppercase",color:"var(--red)",marginBottom:"1rem"}}>// Manage Options</div>
-          <div className="upsell-action-grid">
-            {ALL_UPSELLS.map(u => {
-              const isDone = purchased.includes(u.id);
-              const isLocked = purchased.includes("lock") && (u.id === "delete" || u.id === "edit");
-              return (
-                <div className="upsell-action" key={u.id}>
-                  <div className="ua-top">
-                    <div>
-                      <div style={{fontSize:"1.1rem",marginBottom:".2rem"}}>{u.emoji}</div>
-                      <div className="ua-name">{u.title}</div>
-                      <div className="ua-sub">{u.subtitle}</div>
-                    </div>
-                    <div className="ua-price">${u.price}</div>
-                  </div>
-                  <div className="ua-desc">{u.desc}</div>
-                  {isLocked
-                    ? <button className="ua-btn done" disabled>🔒 Locked — unavailable</button>
-                    : isDone
-                    ? <button className="ua-btn done" disabled>✓ Applied</button>
-                    : <button className="ua-btn" onClick={() => handleBuy(u.id)}>Purchase — ${u.price}</button>
-                  }
-                </div>
-              );
-            })}
-          </div>
-        </>}
 
         <div style={{marginTop:"1.5rem",display:"flex",gap:"1rem",flexWrap:"wrap"}}>
-          <button className="btn btn-s" onClick={() => setPage("archive")}>View Archive</button>
-          <button className="btn btn-s" onClick={() => setPage("submit")}>Submit Another Regret</button>
+          <button className="btn btn-s" onClick={() => setPage("archive")}>
+            View Archive
+          </button>
+
+          <button className="btn btn-s" onClick={() => setPage("submit")}>
+            Submit Another Regret
+          </button>
         </div>
+
       </div>
     </div>
   );
 }
 
 function LeaderboardPage({ setPage }) {
+
+  const [dumbest, setDumbest] = useState([]);
+  const [dramatic, setDramatic] = useState([]);
+  const [funniest, setFunniest] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, []);
+
+  async function fetchLeaderboard() {
+
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("regrets")
+      .select("*")
+      .not("leaderboard_type", "is", null);
+
+    if (error) {
+      console.error(error);
+      alert("Failed to load leaderboard");
+      setLoading(false);
+      return;
+    }
+
+    setDumbest(
+  data
+    .filter(r => r.leaderboard_type === "dumbest")
+    .sort((a,b) => (a.leaderboard_rank ?? 999) - (b.leaderboard_rank ?? 999))
+);
+
+setDramatic(
+  data
+    .filter(r => r.leaderboard_type === "dramatic")
+    .sort((a,b) => (a.leaderboard_rank ?? 999) - (b.leaderboard_rank ?? 999))
+);
+
+setFunniest(
+  data
+    .filter(r => r.leaderboard_type === "funniest")
+    .sort((a,b) => (a.leaderboard_rank ?? 999) - (b.leaderboard_rank ?? 999))
+);
+    setLoading(false);
+  }
+
   const sections = [
-    ["🏆","Dumbest","// Peer-reviewed by people who've also made dumb decisions. Bias may exist.","dumbest"],
-    ["🎭","Most Dramatic","// A standing ovation for the audacity. These people committed.","dramatic"],
-    ["😂","Funniest","// It's only funny because it happened to someone else. Probably.","funniest"],
+    ["🏆","Dumbest","// Peer-reviewed by people who've also made dumb decisions.", dumbest],
+    ["🎭","Most Dramatic","// A standing ovation for the audacity.", dramatic],
+    ["😂","Funniest","// It's only funny because it happened to someone else.", funniest],
   ];
+
   return (
     <div className="page">
+
       <div className="lb-head">
         <div className="lb-title">Hall of Shame</div>
-        <div className="lb-sub">Manually curated. Editorially ruthless. Alphabetically nothing.</div>
+        <div className="lb-sub">Manually curated. Admin approved.</div>
       </div>
+
       <div className="lb-content">
+
         <div className="lb-cta">
           <p className="lb-cta-txt">Want a shot at immortality in the wrong direction?</p>
-          <button className="btn btn-p" onClick={() => setPage("submit")}>Submit Your Regret — $1</button>
+          <button className="btn btn-p" onClick={() => setPage("submit")}>
+            Submit Your Regret — $1
+          </button>
         </div>
-        {sections.map(([icon,title,desc,key]) => (
-          <div className="lb-sec" key={key}>
-            <div className="lb-sec-title">{icon} <em>{title}</em> Regrets</div>
-            <div className="lb-sec-desc">{desc}</div>
-            <div className="lb-entries">
-              {LEADERBOARD[key].map(e => (
-                <div className="lb-entry" key={e.rank}>
-                  <div className="lb-rank">#{e.rank}</div>
-                  <div><div className="lb-etext">"{e.text}"</div><div className="lb-ename">— {e.name}</div></div>
-                  <div className="lb-score">{e.score}</div>
-                </div>
-              ))}
+
+        {loading && (
+          <p style={{ textAlign:"center", color:"var(--gray)" }}>
+            Loading leaderboard...
+          </p>
+        )}
+
+        {!loading && sections.map(([icon,title,desc,list]) => (
+
+          <div className="lb-sec" key={title}>
+
+            <div className="lb-sec-title">
+              {icon} <em>{title}</em> Regrets
             </div>
+
+            <div className="lb-sec-desc">{desc}</div>
+
+            <div className="lb-entries">
+
+              {list.length === 0 && (
+                <div style={{padding:"1.5rem",color:"var(--gray)"}}>
+                  No regrets assigned yet.
+                </div>
+              )}
+
+              {list.map((r, i) => (
+
+                <div className="lb-entry" key={r.id}>
+
+                  <div className="lb-rank">#{i+1}</div>
+
+                  <div>
+                    <div className="lb-etext">"{r.text}"</div>
+                    <div className="lb-ename">
+                      — {r.display_name || "Anonymous"}
+                    </div>
+                  </div>
+
+                </div>
+
+              ))}
+
+            </div>
+
           </div>
+
         ))}
+
       </div>
+
     </div>
   );
 }
@@ -774,41 +977,325 @@ function LeaderboardPage({ setPage }) {
 function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [pass, setPass] = useState("");
-  const [regrets, setRegrets] = useState(MOCK_REGRETS);
-  if (!authed) return (
-    <div className="page">
-      <div className="login-box">
-        <div className="login-title">Admin Access</div>
-        <p style={{fontSize:".68rem",color:"var(--gray)",marginBottom:"1.5rem",textAlign:"center"}}>If you don't know the password, you're not admin. That's the whole system.</p>
-        <input className="fi" type="password" placeholder="Password" value={pass} onChange={e => setPass(e.target.value)} style={{marginBottom:"1rem"}} onKeyDown={e => e.key==="Enter"&&(pass==="regret2025"?setAuthed(true):alert("Wrong password. A fitting regret."))} />
-        <button className="btn btn-p" style={{width:"100%"}} onClick={() => pass==="regret2025"?setAuthed(true):alert("Wrong password. A fitting regret.")}>Enter</button>
-        <p style={{fontSize:".6rem",color:"var(--gray)",marginTop:"1rem",textAlign:"center",opacity:.6}}>Hint: regret2025</p>
-      </div>
-    </div>
+  const [regrets, setRegrets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // load regrets from database
+  useEffect(() => {
+    if (authed) fetchRegrets();
+  }, [authed]);
+
+  async function fetchRegrets() {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("regrets")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      alert("Failed to load regrets");
+    } else {
+      setRegrets(data);
+    }
+
+    setLoading(false);
+  }
+
+   async function updateRank(id, rank) {
+
+  const { error } = await supabase
+    .from("regrets")
+    .update({ leaderboard_rank: rank })
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    alert("Rank update failed");
+    return;
+  }
+
+  setRegrets(prev =>
+    prev.map(r =>
+      r.id === id ? { ...r, leaderboard_rank: rank } : r
+    )
   );
+}
+
+  // delete regret from database
+  async function deleteRegret(id) {
+
+  const regret = regrets.find(r => r.id === id);
+
+  if (regret?.is_locked) {
+    alert("This regret is locked and cannot be deleted.");
+    return;
+  }
+
+  const confirmDelete = window.confirm(
+    "Delete this regret permanently?"
+  );
+
+    if (!confirmDelete) return;
+
+    const { error } = await supabase
+      .from("regrets")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      alert("Delete failed");
+      return;
+    }
+
+    // remove from UI instantly
+    setRegrets(prev => prev.filter(r => r.id !== id));
+  }
+// assign leaderboard category
+async function setLeaderboard(id, type) {
+  const { error } = await supabase
+    .from("regrets")
+    .update({ leaderboard_type: type })
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    alert("Failed to assign leaderboard");
+    return;
+  }
+
+  setRegrets(prev =>
+    prev.map(r =>
+      r.id === id ? { ...r, leaderboard_type: type } : r
+    )
+  );
+}
+
+// remove from leaderboard
+async function removeLeaderboard(id) {
+  const { error } = await supabase
+    .from("regrets")
+    .update({ leaderboard_type: null })
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    alert("Failed to remove leaderboard");
+    return;
+  }
+
+  setRegrets(prev =>
+    prev.map(r =>
+      r.id === id ? { ...r, leaderboard_type: null } : r
+    )
+  );
+}
+
+async function toggleLock(id, currentState) {
+
+  const { error } = await supabase
+    .from("regrets")
+    .update({ is_locked: !currentState })
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    alert("Failed to update lock");
+    return;
+  }
+
+  setRegrets(prev =>
+    prev.map(r =>
+      r.id === id ? { ...r, is_locked: !currentState } : r
+    )
+  );
+}
+
+async function login() {
+
+  try {
+    const res = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      setAuthed(true);
+      localStorage.setItem("admin", "true");
+    } else {
+      alert("Wrong password");
+    }
+
+  } catch (err) {
+    alert("Login failed");
+  }
+}
+
+  // login screen
+  if (!authed)
+    return (
+      <div className="page">
+        <div className="login-box">
+          <div className="login-title">Admin Access</div>
+
+          <p style={{
+            fontSize:".68rem",
+            color:"var(--gray)",
+            marginBottom:"1.5rem",
+            textAlign:"center"
+          }}>
+            If you don't know the password, you're not admin.
+          </p>
+
+          <input
+            className="fi"
+            type="password"
+            placeholder="Password"
+            value={pass}
+            onChange={e => setPass(e.target.value)}
+            style={{marginBottom:"1rem"}}
+            onKeyDown={e => {
+              if (e.key === "Enter") login();
+             }}
+           />
+
+           <button
+            className="btn btn-p"
+            style={{width:"100%"}}
+            onClick={login}
+          >
+            Enter
+          </button>
+        </div>
+      </div>
+    );
+
+   // admin panel
   return (
     <div className="page">
       <div className="adm-wrap">
-        <div className="adm-title">Admin Panel — Regret Manager</div>
-        <p style={{fontSize:".73rem",color:"var(--gray)",marginBottom:"2rem"}}>{regrets.length} regrets in the database. Handle with questionable care.</p>
+
+        <div className="adm-title">
+          Admin Panel — Regret Manager
+        </div>
+
+        <p style={{
+          fontSize:".73rem",
+          color:"var(--gray)",
+          marginBottom:"2rem"
+        }}>
+          {loading ? "Loading..." : `${regrets.length} regrets in database`}
+        </p>
+
         <div className="adm-grid">
+
           {regrets.map(r => (
             <div className="adm-card" key={r.id}>
-              <div className="adm-cat">{r.category} · {r.name}</div>
-              <div className="adm-text">"{r.text}"</div>
-              <div className="adm-acts">
-                <button className="abtn del" onClick={() => setRegrets(regrets.filter(x=>x.id!==r.id))}>Delete</button>
-                <button className="abtn feat">⭐ Feature</button>
-                <button className="abtn lb">+ Leaderboard</button>
+
+              <div className="adm-cat">
+                {r.category} · {r.display_name || "Anonymous"}
               </div>
+
+              <div className="adm-text">
+                "{r.text}"
+              </div>
+
+              {r.is_locked && (
+                <div style={{
+                  fontSize: ".6rem",
+                  color: "var(--gold)",
+                  marginBottom: ".5rem"
+                }}>
+                  🔒 Locked from deletion
+                </div>
+              )}
+
+              {r.leaderboard_type && (
+                <div style={{
+                  fontSize: ".6rem",
+                  color: "var(--red)",
+                  marginBottom: ".5rem"
+                }}>
+                  Leaderboard: {r.leaderboard_type}
+                </div>
+              )}
+
+              {r.leaderboard_type && (
+                <div style={{ marginBottom: ".6rem" }}>
+                  <input
+                    type="number"
+                    placeholder="Rank"
+                    value={r.leaderboard_rank || ""}
+                    onChange={(e) => updateRank(r.id, Number(e.target.value))}
+                    style={{
+                      width: "70px",
+                      padding: "4px",
+                      fontSize: ".7rem"
+                    }}
+                  />
+                </div>
+              )}
+
+              <div className="adm-acts">
+
+                <button
+                  className="abtn del"
+                  onClick={() => deleteRegret(r.id)}
+                >
+                  Delete
+                </button>
+
+                <button
+                  className="abtn feat"
+                  onClick={() => setLeaderboard(r.id, "dumbest")}
+                >
+                  Dumbest
+                </button>
+
+                <button
+                  className="abtn feat"
+                  onClick={() => setLeaderboard(r.id, "dramatic")}
+                >
+                  Dramatic
+                </button>
+
+                <button
+                  className="abtn feat"
+                  onClick={() => setLeaderboard(r.id, "funniest")}
+                >
+                  Funniest
+                </button>
+
+                <button
+                  className="abtn lb"
+                  onClick={() => removeLeaderboard(r.id)}
+                >
+                  Remove LB
+                </button>
+
+                <button
+                  className="abtn feat"
+                  onClick={() => toggleLock(r.id, r.is_locked)}
+                >
+                  {r.is_locked ? "Unlock" : "Lock"}
+                </button>
+
+              </div>
+
             </div>
           ))}
+
         </div>
+
       </div>
     </div>
   );
 }
-
 const LEGAL = {
   terms:{title:"Terms & Conditions",sub:"The legal bit. We know you won't read it. That's kind of on brand.",sections:[{h:"1. The Service",b:"Regret Registry is a platform for anonymous public confession of personal regrets. By submitting, you confirm the regret is yours, not fabricated, and not containing personal information about others."},{h:"2. Payment",b:"All submissions require a $1 payment via PayPal or Razorpay. Additional features (edits, deletions, pins, badges, locks, bumps) are priced separately. All fees are non-refundable once applied."},{h:"3. Content",b:"Submissions must not include real names of others, personal contact information, defamatory statements, or illegal content. We reserve the right to remove submissions at any time."},{h:"4. Anonymity",b:"We do not publish your real name. The archive name is chosen by you. Your payment processor handles billing per their own terms."},{h:"5. Management Links",b:"Private management links are generated per submission. We do not store accounts. Losing your link means losing management access. We cannot recover lost links."},{h:"6. Liability",b:"We are a museum of poor decisions, not a therapist or legal advisor. Nothing on this platform constitutes advice of any kind."}]},
   privacy:{title:"Privacy Policy",sub:"We collect the minimum. We regret nothing.",sections:[{h:"What We Collect",b:"Submission text, category, archive name (optional), email (optional, for management link delivery), and payment confirmation. Full payment card details are not stored by us."},{h:"What We Don't Collect",b:"Your real name (unless you use it as your archive name). We do not track you across the internet."},{h:"Email Use",b:"If provided, your email is used exclusively to send your management link. We do not send marketing emails. Ever."},{h:"Third Parties",b:"PayPal and Razorpay process payments per their own privacy policies. Supabase stores submission data. Vercel/Netlify handles infrastructure."},{h:"Data Retention",b:"Published regrets are retained indefinitely. Deleted regrets (via Escape Fee) are removed from public view within 24 hours."}]},
@@ -837,12 +1324,23 @@ function LegalPage({ type }) {
 
 export default function App() {
   const [page, setPage] = useState("home");
+  const [draftRegret, setDraftRegret] = useState(null);
   const render = () => {
     switch(page) {
+        case "paypal-success":
+    return <PaypalSuccess setPage={setPage} />;
       case "home": return <LandingPage setPage={setPage} />;
+      case "manage":
+  return <ManagePage setPage={setPage} />;
       case "archive": return <ArchivePage setPage={setPage} />;
-      case "submit": return <SubmitPage setPage={setPage} />;
-      case "manage": return <ManagePage setPage={setPage} />;
+      case "submit":
+  return (
+    <SubmitPage
+      setPage={setPage}
+      setDraftRegret={setDraftRegret}
+    />
+  );
+  
       case "leaderboard": return <LeaderboardPage setPage={setPage} />;
       case "admin": return <AdminPage />;
       case "terms": case "privacy": case "refund": case "contact": return <LegalPage type={page} />;
