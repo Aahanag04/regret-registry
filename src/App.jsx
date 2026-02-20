@@ -547,7 +547,7 @@ function SubmitPage({ setPage }) {
     // =============================
     if (payment === "razorpay") {
 
-      const res = await fetch("/api/create-order", {
+      const res = await fetch("https://regret-registry.vercel.app/api/create-order", {
         method: "POST"
       });
 
