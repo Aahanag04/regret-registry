@@ -1,22 +1,8 @@
 {
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
 
-  "redirects": [
-    {
-      "source": "https://regret-registry.vercel.app/:path*",
-      "destination": "https://regretregistry.in/:path*",
-      "permanent": true
-    }
-  ],
-
-  "rewrites": [
-    {
-      "source": "/sitemap.xml",
-      "destination": "/sitemap.xml"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
   ]
 }

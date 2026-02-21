@@ -337,19 +337,12 @@ function Footer({ setPage }) {
 }
 
 function LandingPage({ setPage }) {
-  useEffect(() => {
-  document.title = "Regret Registry — Archive Your Poor Decisions";
-  const meta = document.createElement("meta");
-  meta.name = "description";
-  meta.content = "Archive your regrets permanently. One dollar. One confession.";
-  document.head.appendChild(meta);
 
-  return () => {
-    document.head.removeChild(meta);
-  }; 
- }, []);
   return (
     <div className="page">
+      <h1 style={{position:"absolute", left:"-9999px"}}>
+       Anonymous regret confessions archive
+    </h1>
 
       <PaymentBanner />
       <div className="hero">
@@ -428,6 +421,9 @@ async function fetchRegrets() {
     });
   return (
     <div className="page">
+      <h1 style={{position:"absolute", left:"-9999px"}}>
+       Real anonymous regret stories archive
+     </h1>
       <div className="arch-head">
         <div className="arch-title">The Regret Archive</div>
         <div className="arch-sub">Permanent documentation of temporary bad judgment</div>
@@ -614,6 +610,9 @@ function SubmitPage({ setPage }) {
 
   if (done) return (
   <div className="page">
+    <h1 style={{position:"absolute", left:"-9999px"}}>
+     Submit your anonymous regret confession
+   </h1>
     <div className="success-pg">
 
       <div style={{textAlign:"center",marginBottom:"2.5rem"}}>
@@ -869,7 +868,6 @@ function ManagePage({ setPage }) {
 }
 
 function LeaderboardPage({ setPage }) {
-
   const [dumbest, setDumbest] = useState([]);
   const [dramatic, setDramatic] = useState([]);
   const [funniest, setFunniest] = useState([]);
@@ -923,7 +921,9 @@ setFunniest(
 
   return (
     <div className="page">
-
+     <h1 style={{position:"absolute", left:"-9999px"}}>
+      Funniest and dumbest regret confessions leaderboard
+    </h1>
       <div className="lb-head">
         <div className="lb-title">Hall of Shame</div>
         <div className="lb-sub">Manually curated. Admin approved.</div>
@@ -1316,7 +1316,7 @@ async function login() {
 
 function ShareButtons({ regretText }) {
 
-  const url = "https://regret-registry.vercel.app";
+  const url = "https://regretregistry.in";
 
   const text = `I paid ₹87 to permanently archive this regret 💀
 
@@ -1397,6 +1397,76 @@ function LegalPage({ type }) {
 
 export default function App() {
   const [page, setPage] = useState("home");
+
+  useEffect(() => {
+
+  const seo = {
+    home: {
+      title: "Regret Registry — Archive Your Regret Permanently",
+      desc: "Archive your regrets permanently. One dollar. One confession."
+    },
+    archive: {
+      title: "Regret Archive — Real Human Mistakes",
+      desc: "Browse real regrets submitted by people around the world."
+    },
+    leaderboard: {
+      title: "Regret Leaderboard — Most Legendary Mistakes",
+      desc: "The most unforgettable regrets ever archived."
+    },
+    submit: {
+      title: "Submit Your Regret | Regret Registry",
+      desc: "Confess your biggest mistake and archive it forever."
+    }
+  };
+
+  const current = seo[page] || seo.home;
+
+  // title
+  document.title = current.title;
+
+  // description
+  let meta = document.querySelector("meta[name='description']");
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "description";
+    document.head.appendChild(meta);
+  }
+  meta.content = current.desc;
+
+}, [page]);
+
+useEffect(() => {
+
+  console.log("PAGE CHANGED:", page);   // 👈 debug line
+
+  if (page === "home")
+    document.title = "Regret Registry — Archive Your Poor Decisions";
+
+  else if (page === "archive")
+    document.title = "Regret Archive | Regret Registry";
+
+  else if (page === "submit")
+    document.title = "Submit Your Regret | Regret Registry";
+
+  else if (page === "leaderboard")
+    document.title = "Hall of Shame | Regret Registry";
+
+  else
+    document.title = "Regret Registry";
+
+}, [page]);
+   useEffect(() => {
+
+    const titles = {
+      home: "Regret Registry — Archive Your Poor Decisions",
+      archive: "Regret Archive | Regret Registry",
+      leaderboard: "Hall of Shame | Regret Registry",
+      submit: "Submit Your Regret | Regret Registry"
+    };
+
+    document.title = titles[page] || "Regret Registry";
+
+  }, [page]);
   const [draftRegret, setDraftRegret] = useState(null);
   const render = () => {
     switch(page) {
