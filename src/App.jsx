@@ -392,6 +392,47 @@ function LandingPage({ setPage }) {
   );
 }
 
+function ShareRegret({ text }) {
+
+  const url = "https://regretregistry.in";
+
+  const message = `I found this regret on the Regret Registry 💀
+
+"${text}"
+
+Archive yours → ${url}`;
+
+  const open = (link) => window.open(link, "_blank");
+
+  return (
+    <div style={{
+      marginTop: "6px",
+      display: "flex",
+      gap: "4px",
+      flexWrap: "wrap"
+    }}>
+
+      <button className="share-btn" onClick={() =>
+        open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`)
+      }>X</button>
+
+      <button className="share-btn" onClick={() =>
+        open(`https://www.reddit.com/submit?title=${encodeURIComponent(message)}`)
+      }>Reddit</button>
+
+      <button className="share-btn" onClick={() =>
+        open(`https://wa.me/?text=${encodeURIComponent(message)}`)
+      }>WhatsApp</button>
+
+      <button className="share-btn" onClick={() => {
+        navigator.clipboard.writeText(message);
+        alert("Copied!");
+      }}>Copy</button>
+
+    </div>
+  );
+}
+
 function ArchivePage({ setPage }) {
   const [filter, setFilter] = useState("All");
   const [sort, setSort] = useState("popular");
@@ -439,25 +480,28 @@ async function fetchRegrets() {
         </select>
       </div>
       <div className="arch-grid">
-        {filtered.map(r => (
-  <div className="rcard" key={r.id}>
+  {filtered.map(r => (
+    <div className="rcard" key={r.id}>
 
-    <div className="rcard-top">
-      <div className="rcat">{r.category || "General"}</div>
-      <div className="rvotes">▲ 0</div>
-    </div>
-
-    <div className="rtext">"{r.text}"</div>
-
-    <div className="rfoot">
-      <div className="rname">
-        — {r.display_name || "Anonymous"} · {new Date(r.created_at).toLocaleDateString()}
+      <div className="rcard-top">
+        <div className="rcat">{r.category || "General"}</div>
+        <div className="rvotes">▲ 0</div>
       </div>
-    </div>
 
-  </div>
-))}
+      <div className="rtext">"{r.text}"</div>
+
+      <div className="rfoot">
+        <div className="rname">
+          — {r.display_name || "Anonymous"} · {new Date(r.created_at).toLocaleDateString()}
+        </div>
       </div>
+
+      {/* 🔥 SHARE BUTTONS */}
+      <ShareRegret text={r.text} />
+
+    </div>
+  ))}
+</div>
     </div>
   );
 }

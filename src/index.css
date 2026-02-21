@@ -52,6 +52,32 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.share-btn {
+  font-size: 10px !important;
+  line-height: 1 !important;
+  padding: 2px 6px !important;
+
+  border-radius: 3px !important;
+  border: 1px solid rgba(0,0,0,0.2) !important;
+
+  background: transparent !important;
+
+  color: #444242 !important;   /* 👈 TEXT COLOR */
+  cursor: pointer !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  height: 18px !important;
+  white-space: nowrap !important;
+}
+
+.share-btn:hover {
+  background: black !important;
+  color: white !important;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
