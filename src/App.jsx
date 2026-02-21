@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import { useEffect, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap');`;
 
@@ -1533,6 +1534,7 @@ useEffect(() => {
         <div style={{flex:1}}>{render()}</div>
         <Footer setPage={setPage} />
       </div>
+      <Analytics />
     </>
   );
 }
