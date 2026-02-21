@@ -806,23 +806,18 @@ function SubmitPage({ setPage }) {
     <div className="pay-methods">
 
       {[
-        ["paypal","🅿️","PayPal","Coming Soon"],
+        ["paypal","🅿️","PayPal","Global · Cards, PayPal balance"],
         ["razorpay","₹","Razorpay","India · UPI, Cards, Netbanking"]
       ].map(([id,logo,name,region]) => {
-
-        const disabled = id === "paypal";
 
         return (
           <div
             key={id}
             className={`popt ${payment===id?"sel":""}`}
-            onClick={() => {
-              if (disabled) return;
-              setPayment(id);
-            }}
+            onClick={() => setPayment(id)}
             style={{
-              opacity: disabled ? 0.5 : 1,
-              cursor: disabled ? "not-allowed" : "pointer"
+              opacity: 1,
+              cursor: "pointer"
             }}
           >
             <div className="plogo">{logo}</div>
@@ -854,10 +849,6 @@ function SubmitPage({ setPage }) {
     <button
       className="btn btn-p"
       onClick={() => {
-        if (payment === "paypal") {
-          alert("PayPal launching soon 🌍");
-          return;
-        }
         pay();
       }}
       style={{opacity: loading ? 0.6 : 1}}
